@@ -61,3 +61,22 @@ This tests:
 - Multi-item order placement.
 - Stock checking (preventing checkout if stock is insufficient).
 - Stock restoration when an order is cancelled/deleted.
+
+---
+
+## Final Submission Details
+
+Please update the following links once you have completed the deployment steps:
+
+- **GitHub Repository**: [Link to Repository]
+- **Docker Hub Image**: [Link to Backend Image]
+- **Live Frontend URL**: [Link to Live App]
+- **Live Backend API URL**: [Link to Live API]
+
+### Manual Deployment Checklist
+1. **GitHub**: Push this repository to your GitHub account.
+2. **Docker Hub**: 
+   - `docker build -t <your-username>/inventory-backend ./backend`
+   - `docker push <your-username>/inventory-backend`
+3. **Render (Backend)**: Connect GitHub -> New Web Service -> Root: `backend` -> Start Command: `uvicorn app.main:app`.
+4. **Vercel (Frontend)**: Connect GitHub -> New Project -> Root: `frontend` -> Framework: `Vite` -> Add ENV `VITE_API_URL`.

@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Use relative URLs so Vite dev-server proxy forwards /api/* → FastAPI on :8000
+// Use VITE_API_URL for production, fallback to empty string for local dev-server proxy
 const api = axios.create({
-  baseURL: '',
+  baseURL: import.meta.env.VITE_API_URL || '',
 });
 
 // Request interceptor to attach JWT token
