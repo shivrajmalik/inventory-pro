@@ -15,6 +15,7 @@ import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Customers from './pages/Customers';
 import Orders from './pages/Orders';
+import DatabaseViewer from './pages/DatabaseViewer';
 import Toasts from './components/Toasts';
 
 import { authAPI, productsAPI, customersAPI, ordersAPI, statsAPI } from './api';
@@ -284,6 +285,9 @@ export default function App() {
             onCreate={handleCreateOrder}
             onDelete={handleDeleteOrder}
           />
+        )}
+        {view === 'database' && (
+          <DatabaseViewer />
         )}
       </main>
 
