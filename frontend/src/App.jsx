@@ -278,7 +278,13 @@ function App() {
         )}
 
         <div className="max-w-[1600px] mx-auto">
-          {view === 'dashboard' && <Dashboard stats={stats} setView={setView} />}
+            {view === 'dashboard' && stats && <Dashboard stats={stats} setView={setView} />}
+          {view === 'dashboard' && !stats && (
+            <div className="flex flex-col items-center justify-center py-20 grayscale opacity-30">
+              <RefreshCw className="w-12 h-12 animate-spin mb-4" />
+              <p className="font-bold tracking-widest uppercase text-xs">Awaiting Statistics...</p>
+            </div>
+          )}
           
           {view === 'products' && (
             <Products 
