@@ -132,7 +132,7 @@ export default function Orders({ orders, products, customers, onCreate, onDelete
       ) : (
         <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b border-white/5 text-xs text-gray-400 uppercase tracking-wider">
                   <th className="py-4 px-6 font-semibold">Order ID</th>

@@ -135,7 +135,7 @@ export default function Products({ products, onCreate, onUpdate, onDelete }) {
       ) : (
         <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full border-collapse min-w-[700px]">
               <thead>
                 <tr className="border-b border-white/5 text-xs text-gray-400 uppercase tracking-wider">
                   <th className="py-4 px-6 font-semibold">Product Detail</th>

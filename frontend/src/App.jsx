@@ -7,7 +7,9 @@ import {
   LogOut, 
   Activity,
   User,
-  RefreshCw
+  RefreshCw,
+  Menu,
+  X
 } from 'lucide-react';
 
 import Login from './pages/Login';
@@ -20,132 +22,65 @@ import Toasts from './components/Toasts';
 
 import { authAPI, productsAPI, customersAPI, ordersAPI, statsAPI } from './api';
 
-export default function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
+function App() {
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(null);
-  const [view, setView] = useState('dashboard');
-  const [loading, setLoading] = useState(true);
-
-  // Core Data States
+  const [view, setView] = useState('dashboard'); // dashboard, products, customers, orders
+  const [loading, setLoading] = useState(false);
+  
+  const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [stats, setStats] = useState({
-    total_products: 0,
-    total_customers: 0,
-    total_orders: 0,
-    low_stock_products: []
-  });
 
   const [toasts, setToasts] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Authenticate / fetch user
   useEffect(() => {
     if (token) {
-      localStorage.setItem('token', token);
       authAPI.me()
-        .then(u => setUser(u))
-        .catch(() => handleLogout());
-    } else {
-      localStorage.removeItem('token');
-      setUser(null);
-      setLoading(false);
+        .then(setUser)
+        .catch(() => {
+          localStorage.removeItem('token');
+          setToken(null);
+        });
     }
   }, [token]);
 
-  // Load app data
+  // Fetch all data
   useEffect(() => {
-    if (!user) return;
-
-    setLoading(true);
-    Promise.all([
-      productsAPI.getAll(),
-      customersAPI.getAll(),
-      ordersAPI.getAll(),
-      statsAPI.getStats()
-    ])
-      .then(([prods, custs, ords, st]) => {
-        setProducts(prods);
-        setCustomers(custs);
-        setOrders(ords);
-        setStats(st);
-      })
-      .catch((err) => console.error("Error loading application data:", err))
-      .finally(() => setLoading(false));
+    if (user) {
+      setLoading(true);
+      Promise.all([
+        statsAPI.getStats(),
+        productsAPI.getAll(),
+        customersAPI.getAll(),
+        ordersAPI.getAll()
+      ]).then(([s, p, c, o]) => {
+        setStats(s);
+        setProducts(p);
+        setCustomers(c);
+        setOrders(o);
+      }).finally(() => setLoading(false));
+    }
   }, [user, refreshKey]);
 
+  const triggerRefresh = () => setRefreshKey(prev => prev + 1);
+
   const handleLogin = (newToken) => {
+    localStorage.setItem('token', newToken);
     setToken(newToken);
   };
 
   const handleLogout = () => {
-    setToken('');
-    setUser(null);
     localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
   };
 
-  const triggerRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
-  // Product actions
-  const handleCreateProduct = async (data) => {
-    const newProd = await productsAPI.create(data);
-    addToast('Product created successfully!', 'success');
-    triggerRefresh();
-    return newProd;
-  };
-
-  const handleUpdateProduct = async (id, data) => {
-    const updatedProd = await productsAPI.update(id, data);
-    addToast('Product updated successfully!', 'success');
-    triggerRefresh();
-    return updatedProd;
-  };
-
-  const handleDeleteProduct = async (id) => {
-    await productsAPI.delete(id);
-    addToast('Product deleted.', 'success');
-    triggerRefresh();
-  };
-
-  // Customer actions
-  // Customer actions
-  const handleCreateCustomer = async (data) => {
-    const newCust = await customersAPI.create(data);
-    addToast('Customer profile created!', 'success');
-    triggerRefresh();
-    return newCust;
-  };
-
-  const handleUpdateCustomer = async (id, data) => {
-    const updatedCust = await customersAPI.update(id, data);
-    addToast('Customer profile updated!', 'success');
-    triggerRefresh();
-    return updatedCust;
-  };
-
-  const handleDeleteCustomer = async (id) => {
-    await customersAPI.delete(id);
-    addToast('Customer deleted.', 'success');
-    triggerRefresh();
-  };
-
-  // Order actions
-  const handleCreateOrder = async (data) => {
-    const newOrder = await ordersAPI.create(data);
-    addToast('Order placed successfully!', 'success');
-    triggerRefresh();
-    return newOrder;
-  };
-
-  const handleDeleteOrder = async (id) => {
-    await ordersAPI.delete(id);
-    addToast('Order cancelled and stock restored.', 'success');
-    triggerRefresh();
-  };
-
+  // Toast actions
   const addToast = (message, type = 'success') => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -153,6 +88,61 @@ export default function App() {
 
   const removeToast = (id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Product actions
+  const handleCreateProduct = async (data) => {
+    await productsAPI.create(data);
+    addToast('Product created successfully');
+    triggerRefresh();
+  };
+
+  const handleUpdateProduct = async (id, data) => {
+    await productsAPI.update(id, data);
+    addToast('Product updated successfully');
+    triggerRefresh();
+  };
+
+  const handleDeleteProduct = async (id) => {
+    await productsAPI.delete(id);
+    addToast('Product deleted', 'warning');
+    triggerRefresh();
+  };
+
+  // Customer actions
+  const handleCreateCustomer = async (data) => {
+    await customersAPI.create(data);
+    addToast('Customer profile created!', 'success');
+    triggerRefresh();
+  };
+
+  const handleUpdateCustomer = async (id, data) => {
+    await customersAPI.update(id, data);
+    addToast('Customer updated successfully');
+    triggerRefresh();
+  };
+
+  const handleDeleteCustomer = async (id) => {
+    await customersAPI.delete(id);
+    addToast('Customer profile deleted', 'warning');
+    triggerRefresh();
+  };
+
+  // Order actions
+  const handleCreateOrder = async (data) => {
+    try {
+      await ordersAPI.create(data);
+      addToast('Order placed successfully!', 'success');
+      triggerRefresh();
+    } catch (err) {
+      addToast(err.response?.data?.detail || 'Failed to place order', 'error');
+    }
+  };
+
+  const handleDeleteOrder = async (id) => {
+    await ordersAPI.delete(id);
+    addToast('Order cancelled and stock restored', 'warning');
+    triggerRefresh();
   };
 
   if (!token || !user) {
@@ -173,13 +163,32 @@ export default function App() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#080b11] relative text-gray-200">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#080b11] relative text-gray-200">
       {/* Background radial lights */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/5 rounded-full blur-3xl pointer-events-none"></div>
 
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#0a0d16] border-r border-white/5 flex flex-col justify-between shrink-0 relative z-20">
+      {/* Mobile Header */}
+      <header className="lg:hidden h-16 flex items-center justify-between px-6 border-b border-white/5 relative z-50 bg-[#080b11]/80 backdrop-blur-md sticky top-0">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center">
+            <Activity className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-lg font-bold text-white tracking-tight">Inventory<span className="text-blue-400">Pro</span></span>
+        </div>
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-2 text-gray-400 hover:text-white transition-colors"
+        >
+          {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </header>
+
+      {/* Sidebar - Desktop and Mobile Overlay */}
+      <aside className={`
+        fixed lg:relative inset-y-0 left-0 z-40 w-64 bg-[#0a0d16]/95 lg:bg-[#0a0d16] border-r border-white/5 flex flex-col justify-between shrink-0 transition-transform duration-300
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
         <div>
           {/* Logo Brand Header */}
           <div className="p-6 border-b border-white/5 flex items-center gap-3">
@@ -199,7 +208,10 @@ export default function App() {
               return (
                 <button
                   key={link.viewName}
-                  onClick={() => setView(link.viewName)}
+                  onClick={() => {
+                    setView(link.viewName);
+                    setIsSidebarOpen(false);
+                  }}
                   className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     isActive 
                       ? 'bg-blue-600/10 border border-blue-500/25 text-blue-400 shadow-md' 
@@ -246,8 +258,16 @@ export default function App() {
         </div>
       </aside>
 
+      {/* Backdrop for mobile */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
+      )}
+
       {/* Main Content Area */}
-      <main className="grow p-8 overflow-y-auto relative z-10">
+      <main className="grow p-4 md:p-8 lg:p-10 overflow-y-auto relative z-10 w-full">
         {loading && (
           <div className="absolute inset-0 bg-[#080b11]/50 backdrop-blur-xs flex items-center justify-center z-50">
             <div className="flex flex-col items-center gap-3">
@@ -257,41 +277,46 @@ export default function App() {
           </div>
         )}
 
-        {view === 'dashboard' && <Dashboard stats={stats} setView={setView} />}
-        
-        {view === 'products' && (
-          <Products 
-            products={products} 
-            onCreate={handleCreateProduct}
-            onUpdate={handleUpdateProduct}
-            onDelete={handleDeleteProduct}
-          />
-        )}
+        <div className="max-w-[1600px] mx-auto">
+          {view === 'dashboard' && <Dashboard stats={stats} setView={setView} />}
+          
+          {view === 'products' && (
+            <Products 
+              products={products} 
+              onCreate={handleCreateProduct} 
+              onUpdate={handleUpdateProduct}
+              onDelete={handleDeleteProduct} 
+            />
+          )}
 
-        {view === 'customers' && (
-          <Customers 
-            customers={customers} 
-            onCreate={handleCreateCustomer}
-            onUpdate={handleUpdateCustomer}
-            onDelete={handleDeleteCustomer}
-          />
-        )}
+          {view === 'customers' && (
+            <Customers 
+              customers={customers} 
+              onCreate={handleCreateCustomer} 
+              onUpdate={handleUpdateCustomer}
+              onDelete={handleDeleteCustomer} 
+            />
+          )}
 
-        {view === 'orders' && (
-          <Orders 
-            orders={orders} 
-            products={products}
-            customers={customers}
-            onCreate={handleCreateOrder}
-            onDelete={handleDeleteOrder}
-          />
-        )}
-        {view === 'database' && (
-          <DatabaseViewer />
-        )}
+          {view === 'orders' && (
+            <Orders 
+              orders={orders} 
+              products={products} 
+              customers={customers} 
+              onCreate={handleCreateOrder}
+              onDelete={handleDeleteOrder}
+            />
+          )}
+
+          {view === 'database' && (
+            <DatabaseViewer />
+          )}
+        </div>
       </main>
 
       <Toasts toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }
+
+export default App;
